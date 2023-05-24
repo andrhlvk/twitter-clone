@@ -1,7 +1,14 @@
 import { useSession } from "next-auth/react";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import type { FormEvent } from "react";
 import { Button } from "./Button";
 import { ProfileImage } from "./ProfileImage";
+import { api } from "y/utils/api";
 
 const updateTextAreaHeight = (textArea?: HTMLTextAreaElement) => {
   if (textArea == null) return;
@@ -24,10 +31,24 @@ const Form = () => {
     updateTextAreaHeight(textAreaRef.current);
   }, [inputValue]);
 
+  const createTweet = api.tweet.create.useMutation({
+    onSuccess: () => {
+      setInputValue("");
+    },
+  });
+
   if (session.status !== "authenticated") return null;
 
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    createTweet.mutate({ content: inputValue });
+  };
+
   return (
-    <form className="flex flex-col gap-2 border-b px-4 py-2">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-2 border-b px-4 py-2"
+    >
       <div className="flex gap-4">
         <ProfileImage src={session.data.user.image} />
         <textarea
@@ -36,7 +57,7 @@ const Form = () => {
           style={{ height: 0 }}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          className="flex-grow resize-none overflow-hidden p-4 text-lg outline-none transition-height duration-100 ease-in-out"
+          className="transition-height flex-grow resize-none overflow-hidden p-4 text-lg outline-none duration-100 ease-in-out"
         ></textarea>
       </div>
       <Button className="self-end">Tweet</Button>
